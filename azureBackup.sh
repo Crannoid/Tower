@@ -7,6 +7,8 @@ LOG=/mnt/user/backups/azure-backup.log
 NOTIFY=/usr/local/emhttp/webGui/scripts/notify
 OPTS=(--azureblob-no-check-container --azureblob-access-tier cool --log-file="$LOG" --log-level INFO)
 
+CRYPT="azcrypt:"
+
 on_fail() { "$NOTIFY" -e "Azure backup" -s "Azure backup FAILED" -d "See $LOG" -i alert; }
 trap on_fail ERR
 
@@ -17,13 +19,13 @@ echo "$(date) start" >> "$LOG"
 rclone copy "/mnt/user/unraiddata/Media/Audio Books" "$DEST/audiobooks" "${OPTS[@]}"
 
 # 2. Appdata backups: only new files upload
-rclone copy "/mnt/user/unraiddata/Backup" "$DEST/appdata" --include "/ab_*/**" "${OPTS[@]}"
+rclone copy "/mnt/user/unraiddata/Backup" "${CRYPT}appdata" --include "/ab_*/**" "${OPTS[@]}"
 
-# 3. Calibre: monthly tar snapshot (runs only on the first Sunday of the month)
+# 3. Calibre: monthly tar snapshot (runs only on the first Thursday of the month)
 if [ "$(date +%d)" -le 7 ]; then
   out="$STAGE/calibre-$(date +%F).tar"
   tar -C /mnt/user/unraiddata/Media -cf "$out" calibreLibrary
-  rclone copy "$out" "$DEST/calibre" "${OPTS[@]}"
+  rclone copy "$out" "${CRYPT}calibre" "${OPTS[@]}"
   rm -f "$out"
 fi
 
